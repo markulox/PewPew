@@ -1,23 +1,23 @@
-use config::Config;
-use tokio::task::JoinHandle;
-
 mod config;
 mod shooter;
+mod bullet;
 
 #[tokio::main]
 async fn main() {
     let args: Vec<String> = std::env::args().collect();
     match config::Config::new_by_load_args_vec(args) {
         Ok(conf) => {
-            println!(
-                "URL:{} GUN_NUM:{} REPEAT:{}",
-                conf.get_url(),
-                conf.get_gun_num(),
-                conf.get_repeat()
-            );
+            // TODO: Verify config might be needed
+            println!("<I> Firing at {}", conf.get_url());
+
+            // Start fire here
         }
-        Err(err_msg) => {
-            println!("<X> {err_msg}");
+        Err(err_msgs) => {
+            let str_multi_err = if err_msgs.len() > 1 { "error" } else { "multiple errors" };
+            println!("<X> Unable to fire due to the {str_multi_err} below...");
+            for each_err in err_msgs {
+                println!("  -> {each_err}");
+            }
         }
     }
 

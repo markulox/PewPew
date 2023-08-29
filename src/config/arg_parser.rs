@@ -52,15 +52,13 @@ pub fn build_args_hashmap(
         match check_arg_type(each_arg) {
             ArgType::IsKey => {
                 curr_key = Some(each_arg);
+                hashmap.entry(String::from(each_arg)).or_default();
             }
             ArgType::IsData => {
                 if let Some(curr_key) = curr_key {
-                    hashmap
-                        .entry(String::from(curr_key))
-                        .and_modify(|str_vec| {
-                            str_vec.push(String::from(each_arg));
-                        })
-                        .or_insert(vec![String::from(each_arg)]);
+                    hashmap.entry(String::from(curr_key)).and_modify(|str_vec| {
+                        str_vec.push(String::from(each_arg));
+                    });
                 } else {
                     //if curr_key still none, thats mean there is no key given
                     return Err(String::from("Unexpected arguments."));
@@ -76,7 +74,7 @@ pub fn build_args_hashmap(
 }
 
 // Let this function borrow the argument string
-pub fn convert_args2hashmap(
+pub fn convert2args_hashmap(
     vec_args: &'_ mut Vec<String>,
 ) -> Result<HashMap<&'_ str, Vec<String>>, String> {
     let mut hashmap: HashMap<&str, Vec<String>> = HashMap::new();

@@ -1,5 +1,7 @@
-use reqwest::Error;
+use reqwest::Method;
 use tokio::task::yield_now;
+
+use crate::bullet;
 
 pub async fn fire_get(gun_id: i32, url: String, repeat_times: i32) {
     for i in 0..repeat_times {
@@ -16,4 +18,18 @@ pub async fn fire_get(gun_id: i32, url: String, repeat_times: i32) {
     }
 }
 
-pub async fn fire_post() {}
+pub async fn fire(gun_id: i32, repeat:i64, met: reqwest::Method, url: String, bullet: bullet::Bullet) -> Result<String, String>{
+    let cli = reqwest::Client::new();
+    for i in 0..repeat {
+        match met {
+            Method::GET => {
+                //cli.get(url).header(bullet.get_header());
+            },
+            Method::POST => {
+                cli.post(url).headers(headers).form(bullet.get_body());
+            },
+            _ => {}
+        }
+    }
+    Ok(format!("GUN#{gun_id} DONE!"))
+}
