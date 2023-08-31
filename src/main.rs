@@ -1,6 +1,8 @@
+use std::thread::JoinHandle;
+
+mod bullet;
 mod config;
 mod shooter;
-mod bullet;
 
 #[tokio::main]
 async fn main() {
@@ -9,11 +11,28 @@ async fn main() {
         Ok(conf) => {
             // TODO: Verify config might be needed
             println!("<I> Firing at {}", conf.get_url());
-
             // Start fire here
+            let mut armony: Vec<JoinHandle<()>> = Vec::new();
+            // for i in 0..conf.get_gun_num() {
+            //     armony.push(
+            //         tokio::spawn(
+            //             shooter::fire(
+            //                 i,
+            //                 conf.get_repeat(),
+            //                 met,
+            //                 conf.get_url(),
+            //                 bullet
+            //             )
+            //         )
+            //     )
+            // }
         }
         Err(err_msgs) => {
-            let str_multi_err = if err_msgs.len() > 1 { "error" } else { "multiple errors" };
+            let str_multi_err = if err_msgs.len() > 1 {
+                "error"
+            } else {
+                "multiple errors"
+            };
             println!("<X> Unable to fire due to the {str_multi_err} below...");
             for each_err in err_msgs {
                 println!("  -> {each_err}");

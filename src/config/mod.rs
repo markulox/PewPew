@@ -1,6 +1,8 @@
 #![allow(unused)]
 use std::{collections::HashMap, hash};
 
+use crate::bullet::Bullet;
+
 mod arg_parser;
 
 pub struct Config {
@@ -8,6 +10,7 @@ pub struct Config {
     url: String,
     gun_num: u64,
     repeat: u64,
+    bullet: Bullet
 }
 
 enum HashMapType<'a> {
@@ -16,12 +19,14 @@ enum HashMapType<'a> {
 }
 
 impl Config {
+
     fn new() -> Self {
         Config {
             method: reqwest::Method::GET,
             url: String::from(""),
             gun_num: 1,
             repeat: 1,
+            bullet: Bullet::new(),
         }
     }
 
@@ -71,6 +76,29 @@ impl Config {
                         return Err(format!("Argument {k} (Number of concurrent process) is given but not specified."));
                     }
                 }
+            },
+            "-b" | "--body" => { // Text body
+                if !v.is_empty() {
+                    temp_conf.bullet.replace_body(v.join(" "));
+                } else {
+                    return Err(format!("Argument {k} (text body) is given but not specified."));
+                }
+            },
+            "-f" | "--form" => { // Text form
+                // Let the bullet parse string of form
+                // Syntax <key>:"<value>" or it can be <key>:<value>
+            },
+            "-fj" | "--form.json" => { // json format form
+                // This will parse json to HashMap
+            },
+            "-ffj" | "--form.file.json" => {
+                // This will load the content from json file and parse to hashmap
+            },
+            "-ft" | "--form.toml" => { // toml format form
+                // parse toml format string
+            },
+            "-fft" | "--form.file.toml" => { // toml format form
+                // load toml format string from file
             }
             _ => {
                 return Err(format!("Unknown argument {k}"));
