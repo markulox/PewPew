@@ -14,3 +14,9 @@ Cargo.lock
 *.pdb
 
 .trunk/
+
+.idea/
+
+.vscode/
+
+.src/build.rs

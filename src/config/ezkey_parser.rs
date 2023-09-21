@@ -1,6 +1,11 @@
-use std::{collections::HashMap, fmt::format};
+/* This module will attemp to parse string the in the format of simple key and value which is
+<key>:<value> or
+"<key>":"<value>"
+I will named this format to "EZKey"
+*/
 
-#[derive(Debug)]
+use std::collections::HashMap;
+
 enum CollectState {
     PrepKey,
     BuildKey,
@@ -8,7 +13,6 @@ enum CollectState {
     BuildVal,
 }
 
-#[derive(Debug)]
 enum StrParseState {
     EndKey,
     Default,
@@ -18,7 +22,7 @@ enum StrParseState {
     InStrSpecial,
 }
 
-struct ParseErr {}
+pub struct ParseErr {}
 impl ParseErr {
     const NO_KEY: &str = "No Key given";
     const INVL_KEY_FMT: &str = "Invalid Key Format";
@@ -26,7 +30,7 @@ impl ParseErr {
     const OUT_STATE: &str = "Out of expected state";
 }
 
-fn parse_to_hashmap(form_syn: String) -> Result<HashMap<String, String>, &'static str> {
+pub fn parse_to_hashmap(form_syn: String) -> Result<HashMap<String, String>, &'static str> {
     let mut hm = HashMap::new();
 
     let mut key: String = String::new();
@@ -38,7 +42,6 @@ fn parse_to_hashmap(form_syn: String) -> Result<HashMap<String, String>, &'stati
     for e_char in form_syn.chars() {
         // Here will be state management
         // we will check sub state first (str_parse_state)
-        print!("CHAR[{}] ", e_char);
         match substate {
             StrParseState::Default => {
                 match mainstate {
@@ -220,7 +223,6 @@ fn parse_to_hashmap(form_syn: String) -> Result<HashMap<String, String>, &'stati
                 substate = StrParseState::InStr;
             }
         }
-        print!(" M:{:?} S:{:?}\n", mainstate, substate);
     }
     // Any remaining string key and string value shall be added to hashmap
     if key.len() > 0 && value.len() > 0 {
@@ -229,21 +231,4 @@ fn parse_to_hashmap(form_syn: String) -> Result<HashMap<String, String>, &'stati
         return Err(ParseErr::INVL_VAL_FMT);
     }
     return Ok(hm);
-}
-
-fn main() {
-    let test_form_syn = "key1:pbdr \"key2\":\"LDVR 2.0\" \\:NEWKEY3:\"Test\\\\\"Aphost\"";
-    let form_syn = String::from(test_form_syn);
-    let parse_res = parse_to_hashmap(form_syn);
-    match parse_res {
-        Ok(hm) => {
-            println!("Hashmap Value");
-            for (k, v) in hm {
-                println!("K[{}] => {}", k, v);
-            }
-        }
-        Err(e) => {
-            println!("<X> Parse error: {e}");
-        }
-    }
 }

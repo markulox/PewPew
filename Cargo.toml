@@ -1,3 +1,6 @@
+# Cargo.toml
+build = "build.rs"
+
 [package]
 name = "pewpew"
 version = "0.1.0"
@@ -6,5 +9,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+clap = { version = "4.4.3", features = ["derive"] }
+clap_complete = "4.4.1"
+plotters = "0.3.5"
 reqwest = "0.11.18"
+serde_json = "1.0.105"
 tokio = {version = "1.29.1", features = ["full"]}

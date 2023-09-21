@@ -1,129 +1,60 @@
-#![allow(unused)]
+use clap::Parser;
 
-use std::{collections::HashMap, vec};
+#[derive(Parser)]
+#[command(
+    author = "Nopphon.R <nopphonyel@gmail.com>",
+    version = "0.1.0",
+    about = "API requests tools which perform in parallel.",
+    long_about = "A CLI tool for send multiple API requests simultaneously."
+)]
+pub struct MainCommand {
 
-enum ArgType {
-    IsKey,
-    IsData,
-    None,
-}
+    #[arg(value_hint=clap::ValueHint::Url)]
+    /// URL which used for send requests.
+    pub url:String,
 
-fn check_arg_type(check_arg: &str) -> ArgType {
-    match check_arg.chars().next() {
-        None => ArgType::None,
-        Some(ch) => {
-            if ch == '-' {
-                ArgType::IsKey
-            } else {
-                ArgType::IsData
-            }
-        }
-    }
-}
+    #[arg(short='r', long="repeat", value_name = "Positive Integer", default_value_t = 1)]
+    #[arg(value_parser = clap::value_parser!(u64).range(1..))]
+    /// Number of repeat times of each request thread.
+    pub repeat:u64,
 
-// Let this function consume the vector of argument
-pub fn build_args_hashmap(
-    mut vec_args: Vec<String>,
-) -> Result<HashMap<String, Vec<String>>, String> {
-    let mut hashmap: HashMap<String, Vec<String>> = HashMap::new();
-    vec_args.remove(0); // Remove program name parameters
-    match vec_args.pop() {
-        // Check the last argument
-        Some(v) => {
-            // Last element exist
-            match check_arg_type(&v) {
-                ArgType::IsData => {
-                    // If it is data, assume it as url
-                    hashmap.insert(String::from("url"), vec![v]);
-                }
-                _ => {
-                    return Err(String::from("Expected last argument to be URL."));
-                }
-            }
-        }
-        None => {
-            return Err(String::from("Nothing specified."));
-        }
-    }
+    #[arg(short='d', long="repeat_delay", value_name = "Milisec")]
+    /// Delay time between each repeat
+    pub repeat_delay:Option<u64>,
+ 
+    #[arg(short='n', long="num_gun", value_name = "Positive Integer", default_value_t = 1)]
+    #[arg(value_parser = clap::value_parser!(u64).range(1..))]
+    /// Number of request thread going to be spawn.
+    pub gun_num:u64,
 
-    // Prepare curr_key for ชี้โบ๊ชี้เบ๊
-    let mut curr_key: Option<&String> = None;
-    for each_arg in &vec_args {
-        match check_arg_type(each_arg) {
-            ArgType::IsKey => {
-                curr_key = Some(each_arg);
-                hashmap.entry(String::from(each_arg)).or_default();
-            }
-            ArgType::IsData => {
-                if let Some(curr_key) = curr_key {
-                    hashmap.entry(String::from(curr_key)).and_modify(|str_vec| {
-                        str_vec.push(String::from(each_arg));
-                    });
-                } else {
-                    //if curr_key still none, thats mean there is no key given
-                    return Err(String::from("Unexpected arguments."));
-                }
-            }
-            ArgType::None => {
-                return Err(String::from("Unknown data type"));
-            }
-        }
-    }
+    #[arg(short, long, value_name = "HTTP Method", default_value_t = String::from("get"))]
+    /// Request method
+    pub method:String,
 
-    Ok(hashmap)
-}
+    #[arg(long, value_name="HTTP Header")]
+    /// Specify header (In format of Ezkey)
+    pub header: Option<String>,
 
-// Let this function borrow the argument string
-pub fn convert2args_hashmap(
-    vec_args: &'_ mut Vec<String>,
-) -> Result<HashMap<&'_ str, Vec<String>>, String> {
-    let mut hashmap: HashMap<&str, Vec<String>> = HashMap::new();
+    #[arg(long="body.raw", value_name = "String")]
+    pub body_raw: Option<String>, // Conflict with body
 
-    // Remove the first arg (program name) from the argument string
-    vec_args.remove(0);
-    // Now check the last element that exist?
-    match vec_args.pop() {
-        Some(v) => {
-            // If there is something, let's check its a key or data
-            match check_arg_type(&v) {
-                // If it is data, it might be a url?
-                // next version we can implement url_verfication()
-                ArgType::IsData => {
-                    hashmap.insert("url", vec![v]);
-                }
-                _ => {
-                    return Err(String::from("Expected last argument to be URL."));
-                }
-            }
-        }
-        None => {
-            // If not, thats mean user didn't input anything
-            return Err(String::from("Nothing specified."));
-        }
-    }
+    #[arg(long="body.form", value_name="HTTP Form", conflicts_with("body_raw"))]
+    /// Specify form to be send with the request (In format of Ezkey)
+    pub body_form: Option<String>, // Conflict with body
 
-    // Now start to collect key and value
-    let mut curr_key: Option<&str> = None;
-    for i in 0..vec_args.len() {
-        // We need to loop this way, because if we use for each the string data will be moved to the inner scope
-        // which is the owner will be killed after scope end
-        match check_arg_type(&vec_args[i]) {
-            ArgType::IsKey => {
-                curr_key = Some(&vec_args[i]);
-                hashmap.entry(&vec_args[i]).or_default();
-            }
-            ArgType::IsData => match curr_key {
-                Some(k) => {
-                    hashmap.entry(k).and_modify(|curr_dat| {
-                        curr_dat.push(String::from(&vec_args[i]));
-                    });
-                }
-                None => {
-                    return Err(String::from("Unexpected arguments."));
-                }
-            },
-            ArgType::None => {}
-        }
-    }
-    Ok(hashmap)
+    #[arg(long="latency_report", value_name = "Export Path")]
+    /// Specify graph report location
+    pub latency_report: Option<String>,
+
+    #[arg(long="split_res", default_value_t = false)]
+    /// Specity export result style by merging or split the result (both of them will sorted by timestamp) 
+    pub split_result: bool,
+
+    #[arg(long="show_lat", default_value_t = false)]
+    /// Show the latency of each request
+    pub show_latencies: bool,
+
+    #[arg(long="verbose", default_value_t = false)]
+    /// Show response from the server
+    pub verbose: bool
 }

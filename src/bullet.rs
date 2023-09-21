@@ -1,90 +1,87 @@
 #![allow(unused)]
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::format, str::FromStr};
 
-use reqwest::header::{HeaderMap, HOST};
+use reqwest::header::{HeaderMap, HeaderName, HeaderValue, ACCEPT, HOST};
+use serde_json::Value;
 
+#[derive(Debug)]
 pub struct Bullet {
     // A payload which will be sent with request
     header: Option<HeaderMap>,
-    body: Option<String>,
-    form: Option<HashMap<String, String>>,
+    body_raw: Option<String>,
+    body_form: Option<HashMap<String, String>>,
 }
 
 impl Bullet {
     pub fn new() -> Self {
         Bullet {
             header: None,
-            form: None,
-            body: None,
+            body_form: None,
+            body_raw: None,
         }
     }
 
-    pub fn add_to_header(&mut self, mut key: reqwest::header::HeaderName, value: String) {
-        self.header.get_or_insert(HeaderMap::new()).insert(key, value.parse().unwrap());
+    pub fn add_to_header(&mut self, key: reqwest::header::HeaderName, value: String) {
+        self.header
+            .get_or_insert(HeaderMap::default())
+            .insert(key, value.parse().unwrap());
     }
 
-    pub fn add_to_body(&mut self, append_body: String) {
-        self.body.get_or_insert(String::new()).push_str(&append_body);
-    }
-
-    pub fn add_to_form(&mut self, key: String, value: String) {
-        self.form.get_or_insert(HashMap::new())
-            .entry(key).or_insert(value);
-    }
-
-    pub fn build_form_from_str(&mut self, form_syn: String) {
-        let mut key:String = String::new();
-        let mut value: String = String::new();
-
-        let mut flag_build_key = true;
-        let mut flag_special_next = false;
-        for e_char in form_syn.chars(){
-            if flag_special_next {
-                if flag_build_key { key.push(e_char); }
-                else {value.push(e_char);}
-                flag_special_next = false;
-            }
-            match e_char {
-                '\\' => {
-                    flag_special_next = true;
-                },
-                '\"' => {
-                    if flag_build_key {
-
-                    }
-                },
-                _ => {
-                    if flag_build_key {
-                        key.push(e_char);
-                    } else {
-                        value.push(e_char);
-                    }
+    pub fn add_custom_header(&mut self, key: &String, value: String) -> Result<String, String> {
+        match HeaderName::from_str(key.as_str()) {
+            Ok(hdn) => match HeaderValue::from_str(value.as_str()) {
+                Ok(hdv) => {
+                    self.header
+                        .get_or_insert(HeaderMap::default())
+                        .insert(hdn, hdv);
+                    Ok(format!("Header {key}:{value} added."))
                 }
-            }
+                Err(e) => { Err(format!("{e}")) }
+            },
+            Err(e) => { Err(format!("{e}")) }
         }
+    }
+
+    pub fn add_to_body_raw(&mut self, append_body: String) {
+        self.body_raw
+            .get_or_insert(String::new())
+            .push_str(&append_body);
+    }
+
+    pub fn add_to_body_form(&mut self, key: String, value: String) {
+        self.body_form
+            .get_or_insert(HashMap::new())
+            .entry(key)
+            .or_insert(value);
+    }
+
+    pub fn import_body_form(&mut self, hm: HashMap<String, String>) {
+        self.body_form = Some(hm);
     }
 
     // This will consume your hashmap
     pub fn replace_header(&mut self, new_hdm: HeaderMap) {
-        match self.header {
-            Some(_) => {
-                self.header.replace(new_hdm);
-            },
-            None => {
-                self.header = Some(HeaderMap::new());
+        self.header.replace(new_hdm);
+    }
+
+    pub fn import_header(&mut self, new_hm: HashMap<String, String>) -> Result<String, String> {
+        let mut entry_import_count = 0;
+        let mut new_hdm = HeaderMap::new();
+        for (k, entry) in new_hm {
+            match self.add_custom_header(&k, entry) {
+                Ok(res) => { entry_import_count += 1; }
+                Err(e) => { return Err(format!("Failed to import header '{k}': {e}")); }
             }
         }
+        Ok(format!("Imported {entry_import_count} header(s)"))
     }
 
     pub fn replace_body(&mut self, new_body: String) {
-        match self.body {
-            Some(_) => {
-                self.body.replace(new_body);
-            },
-            None => {
-                self.body = Some(String::new());
-            }
-        }
+        self.body_raw.replace(new_body);
+    }
+
+    pub fn replace_form(&mut self, new_form: HashMap<String, String>) {
+        self.body_form.replace(new_form);
     }
 
     pub fn get_header(&self) -> &Option<HeaderMap> {
@@ -92,13 +89,11 @@ impl Bullet {
     }
 
     pub fn get_body(&self) -> &Option<String> {
-        &self.body
+        &self.body_raw
     }
 
     pub fn get_form(&self) -> &Option<HashMap<String, String>> {
-        &self.form
+        &self.body_form
     }
-
-
 
 }

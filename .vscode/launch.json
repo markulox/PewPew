@@ -19,7 +19,7 @@
                     "kind": "bin"
                 }
             },
-            "args": ["-r", "-n", "Test_Link"],
+            "args": ["http://52.76.50.211:8000/api/catalog/tags", "-r" , "120" , "-d" , "10" , "--header" , "\"My-Header\":Simple connection:keep-alive"],
             "cwd": "${workspaceFolder}"
         },
         {
