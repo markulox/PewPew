@@ -2,8 +2,8 @@ pub mod analytic;
 
 use crate::config::Config;
 use reqwest::{RequestBuilder, StatusCode};
-use std::sync::Arc;
 use std::time::SystemTime;
+use std::{fmt::format, sync::Arc};
 use tokio::{task::yield_now, time};
 
 pub struct ShootRes {
@@ -47,10 +47,6 @@ impl ShootRes {
             None => String::from("Not firing yet..."),
         }
     }
-
-    pub fn dedicate_self(self) -> Self {
-        self
-    }
 }
 
 pub async fn fire(gun_id: u64, arc_conf: Arc<Config>) -> Vec<ShootRes> {
@@ -60,9 +56,7 @@ pub async fn fire(gun_id: u64, arc_conf: Arc<Config>) -> Vec<ShootRes> {
     let conf = arc_conf.as_ref();
     let met = conf.method.clone();
     let cli = reqwest::Client::new();
-    if conf.verbose {
-        println!("GUN#{gun_id} Start shooting at {}", conf.url);
-    }
+    conf.verbose_log(format!("GUN#{gun_id} Start shooting at {}", conf.url));
     for i in 0..conf.repeat {
         let mut shoot_res = ShootRes::new();
         shoot_res.id = gun_id;
@@ -94,9 +88,7 @@ pub async fn fire(gun_id: u64, arc_conf: Arc<Config>) -> Vec<ShootRes> {
 
         // Add delay here
         if let Some(delay_ms) = conf.delay {
-            if conf.verbose {
-                println!("GUN#{gun_id}[{i}]|Delay for {delay_ms} ms.");
-            }
+            conf.verbose_log(format!("GUN#{gun_id}[{i}]|Delay for {delay_ms} ms."));
             tokio::time::sleep(time::Duration::from_millis(delay_ms)).await;
         }
 
@@ -107,22 +99,22 @@ pub async fn fire(gun_id: u64, arc_conf: Arc<Config>) -> Vec<ShootRes> {
                     None => format!("N/A"),
                 };
                 shoot_res.http_status = Some(r.status());
-                let r_text = format!(
-                    "GUN#{gun_id}[{i}]|{:?}->Got in {lat} ms|{:?}",
-                    met,
-                    r.text().await
-                );
-                if conf.verbose {
-                    println!("{r_text}")
-                }
+                let r_text = match r.text().await {
+                    Ok(r) => r,
+                    Err(e) => {
+                        shoot_res.err = true;
+                        format!("{:?}", e)
+                    }
+                };
+                
+                conf.log(format!("GUN#{gun_id}[{i}]|{:?}->Reply in {lat} ms", met));
+                conf.verbose_log(format!("GUN#{gun_id}[{i}]|{:?}->Reply in {lat} ms|{:?}", met, r_text));
+
                 shoot_res.result = Some(r_text);
             }
             Err(e) => {
-                let e_text = format!("GUN#{gun_id}[{i}]|{:?}->Err{:?}", met, e);
-                if conf.verbose {
-                    println!("{e_text}")
-                }
-                shoot_res.result = Some(e_text);
+                conf.log(format!("GUN#{gun_id}[{i}]|{:?}->Err{:?}", met, e));
+                shoot_res.result = Some(format!("{:?}", e));
                 shoot_res.err = true;
             }
         }

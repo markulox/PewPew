@@ -19,4 +19,4 @@ Cargo.lock
 
 .vscode/
 
-.src/build.rs
+src/build.rs

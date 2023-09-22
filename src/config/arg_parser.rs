@@ -19,7 +19,7 @@ pub struct MainCommand {
     pub repeat:u64,
 
     #[arg(short='d', long="repeat_delay", value_name = "Milisec")]
-    /// Delay time between each repeat
+    /// Delay time between each repeat.
     pub repeat_delay:Option<u64>,
  
     #[arg(short='n', long="num_gun", value_name = "Positive Integer", default_value_t = 1)]
@@ -32,29 +32,30 @@ pub struct MainCommand {
     pub method:String,
 
     #[arg(long, value_name="HTTP Header")]
-    /// Specify header (In format of Ezkey)
+    /// Header which going to be send when making a request in a format of <HeaderName>:<HeaderValue> ...
     pub header: Option<String>,
 
     #[arg(long="body.raw", value_name = "String")]
-    pub body_raw: Option<String>, // Conflict with body
+    /// Text body which going to be send when making a request.
+    pub body_raw: Option<String>,
 
     #[arg(long="body.form", value_name="HTTP Form", conflicts_with("body_raw"))]
-    /// Specify form to be send with the request (In format of Ezkey)
+    /// Text body which going to be send when making a request in a format of <FormKey>:<FormValue> ...
     pub body_form: Option<String>, // Conflict with body
 
     #[arg(long="latency_report", value_name = "Export Path")]
-    /// Specify graph report location
+    /// Specify location to export a latency delay of each request as a graoh.
     pub latency_report: Option<String>,
 
     #[arg(long="split_res", default_value_t = false)]
-    /// Specity export result style by merging or split the result (both of them will sorted by timestamp) 
+    /// Split failed request results and successfully request results.
     pub split_result: bool,
 
-    #[arg(long="show_lat", default_value_t = false)]
-    /// Show the latency of each request
-    pub show_latencies: bool,
-
     #[arg(long="verbose", default_value_t = false)]
-    /// Show response from the server
-    pub verbose: bool
+    /// Show response from the server.
+    pub verbose: bool,
+
+    #[arg(long="quiet", default_value_t = false)]
+    /// Hide all operation log that coming from all thread.
+    pub quiet: bool,
 }

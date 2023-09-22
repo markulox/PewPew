@@ -12,7 +12,8 @@ pub struct Config {
     pub repeat: u64,
     pub delay: Option<u64>,
     pub bullet: Bullet,
-    pub verbose: bool
+    pub verbose: bool,
+    pub quiet: bool
 }
 
 impl Config {
@@ -24,7 +25,8 @@ impl Config {
             repeat: 1,
             delay: None,
             bullet: Bullet::new(),
-            verbose: false
+            verbose: false,
+            quiet: false
         }
     }
 
@@ -42,5 +44,13 @@ impl Config {
 
     pub fn get_repeat(&self) -> u64 {
         self.repeat
+    }
+
+    pub fn log(&self, log_str: String) {
+        if !self.quiet { println!("{log_str}"); }
+    }
+
+    pub fn verbose_log(&self, vlog_str: String) {
+        if !self.quiet && self.verbose { println!("{vlog_str}"); }
     }
 }

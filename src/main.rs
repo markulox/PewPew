@@ -41,9 +41,11 @@ async fn main() -> Result<(), String> {
     conf.repeat = args.repeat;
     conf.delay = args.repeat_delay;
     conf.verbose = args.verbose;
+    conf.quiet = args.quiet;
 
+    // Initialize bullet
     let mut bullet = Bullet::new();
-    bullet.add_to_header(reqwest::header::USER_AGENT, String::from("PewPew/0.1.0"));
+    bullet.add_to_header(reqwest::header::USER_AGENT, String::from("PewPew/0.1.0-beta"));
     match args.header {
         Some(header_ezk) => {
             let hm = config::ezkey_parser::parse_to_hashmap(header_ezk)?;
@@ -116,9 +118,6 @@ async fn main() -> Result<(), String> {
     if args.split_result {
         analyzer.split_err_event();
     }
-    if args.show_latencies {
-        analyzer.show_latencies();
-    }
     match args.latency_report {
         Some(file_loc) => match analyzer.plot_latency(file_loc.as_str()) {
             Ok(res) => {
@@ -132,7 +131,7 @@ async fn main() -> Result<(), String> {
     if thread_err_count > 0 {
         Err(format!("There was a thread error occured"))
     } else {
-        //println!("PewPew has run successfully!\nShooting results are\n{}", shooting_ok.join("\n"));
+        println!("<I> Done.");
         Ok(())
     }
 }
