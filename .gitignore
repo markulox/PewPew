@@ -20,3 +20,4 @@ Cargo.lock
 .vscode/
 
 src/build.rs
+examples/test.json

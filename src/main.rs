@@ -3,11 +3,9 @@ mod config;
 mod shooter;
 
 use std::sync::Arc;
-use std::{array, io};
 
 use bullet::Bullet;
 use clap::Parser;
-use clap_complete::{generate, shells::Zsh};
 use config::Config;
 
 use shooter::{analytic::ResultAnalyzer, ShootRes};
@@ -25,7 +23,7 @@ async fn main() -> Result<(), String> {
     let args = config::arg_parser::MainCommand::parse();
 
     // Now import the arguments to the config object
-    let mut conf = Config::new();
+    let mut conf: Config = Config::new();
     match args.method.to_lowercase().as_str() {
         "get" | "g" => conf.method = reqwest::Method::GET,
         "post" | "pos" => conf.method = reqwest::Method::POST,
@@ -45,26 +43,16 @@ async fn main() -> Result<(), String> {
 
     // Initialize bullet
     let mut bullet = Bullet::new();
-    bullet.add_to_header(reqwest::header::USER_AGENT, String::from("PewPew/0.1.0-beta"));
-    match args.header {
-        Some(header_ezk) => {
-            let hm = config::ezkey_parser::parse_to_hashmap(header_ezk)?;
-            bullet.import_header(hm)?;
-        }
-        None => {}
+    if let Some(header_ezk) = args.header {
+        let hm = config::ezkey_parser::parse_to_hashmap(header_ezk)?;
+        bullet.import_header(hm)?;
     }
-    match args.body_form {
-        Some(body_ezk) => {
-            let bdf = config::ezkey_parser::parse_to_hashmap(body_ezk)?;
-            bullet.import_body_form(bdf);
-        }
-        None => {}
+    if let Some(body_ezk) = args.body_form {
+        let bdf = config::ezkey_parser::parse_to_hashmap(body_ezk)?;
+        bullet.import_body_form(bdf);
     }
-    match args.body_raw {
-        Some(bdr) => {
-            bullet.add_to_body_raw(bdr);
-        }
-        None => {}
+    if let Some(bdr) = args.body_raw {
+        bullet.add_to_body_raw(bdr);
     }
     conf.bullet = bullet;
 
@@ -116,16 +104,17 @@ async fn main() -> Result<(), String> {
 
     let mut analyzer = ResultAnalyzer::new(all_shooting_list);
     if args.split_result {
-        analyzer.split_err_event();
+        analyzer.split_err_event()?;
     }
-    match args.latency_report {
-        Some(file_loc) => match analyzer.plot_latency(file_loc.as_str()) {
+    if let Some(file_loc) = args.latency_report {
+        match analyzer.plot_latency(&file_loc) {
             Ok(res) => {
-                println!("<I> {res}")
+                println!("<I> {res}");
             }
-            Err(e) => println!("<X> {:?}", e),
-        },
-        None => {}
+            Err(e) => {
+                println!("<X> {:?}", e);
+            }
+        }
     }
 
     if thread_err_count > 0 {

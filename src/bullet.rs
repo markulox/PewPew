@@ -14,11 +14,13 @@ pub struct Bullet {
 
 impl Bullet {
     pub fn new() -> Self {
-        Bullet {
+        let mut obj = Bullet {
             header: None,
             body_form: None,
             body_raw: None,
-        }
+        };
+        obj.add_to_header(reqwest::header::USER_AGENT, String::from("PewPew/0.1.0-beta"));
+        obj
     }
 
     pub fn add_to_header(&mut self, key: reqwest::header::HeaderName, value: String) {

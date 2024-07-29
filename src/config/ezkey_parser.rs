@@ -24,10 +24,10 @@ enum StrParseState {
 
 pub struct ParseErr {}
 impl ParseErr {
-    const NO_KEY: &str = "No Key given";
-    const INVL_KEY_FMT: &str = "Invalid Key Format";
-    const INVL_VAL_FMT: &str = "Invalid Value Format";
-    const OUT_STATE: &str = "Out of expected state";
+    const NO_KEY: &'static str = "No Key given";
+    const INVL_KEY_FMT: &'static str = "Invalid Key Format";
+    const INVL_VAL_FMT: &'static str = "Invalid Value Format";
+    const OUT_STATE: &'static str = "Out of expected state";
 }
 
 pub fn parse_to_hashmap(form_syn: String) -> Result<HashMap<String, String>, &'static str> {

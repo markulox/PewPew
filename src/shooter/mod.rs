@@ -1,8 +1,9 @@
 pub mod analytic;
 
 use crate::config::Config;
+use reqwest::header::HeaderMap;
 use reqwest::{RequestBuilder, StatusCode};
-use std::time::SystemTime;
+use std::time::{SystemTime, UNIX_EPOCH, Duration};
 use std::{fmt::format, sync::Arc};
 use tokio::{task::yield_now, time};
 
@@ -14,6 +15,8 @@ pub struct ShootRes {
     err: bool,
     latency: Option<u128>,
     http_status: Option<StatusCode>,
+    headers: Option<HeaderMap>,
+    body_text: Option<String>
 }
 
 impl ShootRes {
@@ -26,6 +29,8 @@ impl ShootRes {
             err: false,
             latency: None,
             http_status: None,
+            headers: None,
+            body_text: None
         }
     }
 
@@ -54,7 +59,7 @@ pub async fn fire(gun_id: u64, arc_conf: Arc<Config>) -> Vec<ShootRes> {
     let mut shoot_res_list: Vec<ShootRes> = Vec::new();
 
     let conf = arc_conf.as_ref();
-    let met = conf.method.clone();
+    let met = &conf.method;
     let cli = reqwest::Client::new();
     conf.verbose_log(format!("GUN#{gun_id} Start shooting at {}", conf.url));
     for i in 0..conf.repeat {
@@ -62,7 +67,7 @@ pub async fn fire(gun_id: u64, arc_conf: Arc<Config>) -> Vec<ShootRes> {
         shoot_res.id = gun_id;
         shoot_res.iter_id = i;
 
-        let mut req_builder: RequestBuilder = cli.request(met.clone(), &conf.url);
+        let mut req_builder: RequestBuilder = cli.request(met.to_owned(), &conf.url);
         if let Some(header) = conf.bullet.get_header() {
             req_builder = req_builder.headers(header.clone()); // Use RC? since clone will take a lot of time
         }
@@ -74,15 +79,23 @@ pub async fn fire(gun_id: u64, arc_conf: Arc<Config>) -> Vec<ShootRes> {
         }
 
         // Timer here
-        let begin_fire_time = SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap();
+        let fire_time = SystemTime::now();
         let resp = req_builder.send().await;
-        let end_fire_time = SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap();
-        shoot_res.timestamp = begin_fire_time.as_nanos();
-        shoot_res.latency = Some(end_fire_time.as_millis() - begin_fire_time.as_millis());
+        let fire_time_elapse = fire_time.elapsed();
+        shoot_res.timestamp = fire_time
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or(Duration::default())
+            .as_nanos();
+        shoot_res.latency = fire_time_elapse
+            .ok()
+            .and_then(|d|{
+                Some(d.as_millis())
+            });
+        // let end_fire_time = SystemTime::now()
+        //     .duration_since(SystemTime::UNIX_EPOCH)
+        //     .unwrap();
+        // shoot_res.timestamp = begin_fire_time.as_nanos();
+        // shoot_res.latency = Some(end_fire_time.as_millis() - begin_fire_time.as_millis());
 
         yield_now().await;
 
@@ -99,18 +112,19 @@ pub async fn fire(gun_id: u64, arc_conf: Arc<Config>) -> Vec<ShootRes> {
                     None => format!("N/A"),
                 };
                 shoot_res.http_status = Some(r.status());
-                let r_text = match r.text().await {
+                shoot_res.headers = Some(r.headers().clone());
+                shoot_res.result = Some(format!("{:?}",r));
+                shoot_res.body_text = Some(match r.text().await {
                     Ok(r) => r,
                     Err(e) => {
                         shoot_res.err = true;
                         format!("{:?}", e)
                     }
-                };
+                });
                 
                 conf.log(format!("GUN#{gun_id}[{i}]|{:?}->Reply in {lat} ms", met));
-                conf.verbose_log(format!("GUN#{gun_id}[{i}]|{:?}->Reply in {lat} ms|{:?}", met, r_text));
-
-                shoot_res.result = Some(r_text);
+                conf.verbose_log(format!("GUN#{gun_id}[{i}]|{:?}->Reply in {lat} ms|{:?}", met, shoot_res.result));
+                conf.verbose_log(format!(">>GUN#{gun_id}[{i}].BODY|{:?}",shoot_res.body_text));
             }
             Err(e) => {
                 conf.log(format!("GUN#{gun_id}[{i}]|{:?}->Err{:?}", met, e));

@@ -133,10 +133,10 @@ impl ResultAnalyzer {
         let mut chart_builder = ChartBuilder::on(&root);
         
         let mut chart = chart_builder
-        .set_label_area_size(LabelAreaPosition::Left, 60)
-        .set_label_area_size(LabelAreaPosition::Bottom, 60)
-        .caption("Latency", ("sans-serif", 40))
-        .build_cartesian_2d(0..max_x, min_y..max_y)?;
+            .set_label_area_size(LabelAreaPosition::Left, 60)
+            .set_label_area_size(LabelAreaPosition::Bottom, 60)
+            .caption("Latency", ("sans-serif", 40))
+            .build_cartesian_2d(0..max_x, min_y..max_y)?;
 
         chart.configure_mesh().draw()?;
 

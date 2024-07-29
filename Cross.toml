@@ -1,0 +1,18 @@
+[target.x86_64-unknown-linux-gnu]
+pre-build = [
+    "apt update", 
+    "apt install openssl libssl-dev libfontconfig1-dev fontconfig-config fontconfig vflib3-dev -y", 
+    "export PKG_CONFIG_PATH=$(pkg-config --variable=libdir fontconfig):$PKG_CONFIG_PATH"
+]
+
+[target.aarch64-unknown-linux-gnu]
+# pre-build = [
+#     "apt update", 
+#     "apt-get install libssl-dev pkg-config -y", 
+#     "export PKG_CONFIG_PATH=$(pkg-config --variable=libdir fontconfig):$PKG_CONFIG_PATH"
+# ]
+pre-build = [
+    "apt update",
+    "apt install openssl libssl-dev -y",
+    "export OPENSSL_DIR=\"/usr/include/openssl\""
+]
